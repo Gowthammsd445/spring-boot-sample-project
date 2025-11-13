@@ -1,15 +1,27 @@
-
-# Step 1: Use a lightweight Java image
-FROM eclipse-temurin:17-jdk-jammy
-
-# Step 2: Set the working directory
+# ============================
+# Stage 1: Build the JAR file
+# ============================
+FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /app
 
-# Step 3: Copy the Spring Boot JAR file into the container
-COPY target/my-spring-app-1.0.0.jar app.jar
+# Copy everything (including Maven wrapper and pom.xml)
+COPY . .
 
-# Step 4: Expose the app port
+# Build the JAR (skip tests for faster build)
+RUN ./mvnw clean package -DskipTests
+
+# ============================
+# Stage 2: Run the application
+# ============================
+FROM eclipse-temurin:17-jdk-jammy
+WORKDIR /app
+
+# Copy the built JAR from the previous stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port your app runs on
 EXPOSE 8080
 
-# Step 5: Command to run the app
+# Run the JAR file
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
